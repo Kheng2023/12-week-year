@@ -23,10 +23,50 @@ import {
   ReferenceLine,
   Cell,
 } from 'recharts';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import { useDatabase } from '../../db/hooks';
 import { getCurrentWeek, formatDate, getScoreColor, getScoreHex } from '../../lib/utils';
+import { useCountUp } from '../../lib/useCountUp';
+import { updateAppBadge } from '../../lib/badge';
+
+/** Small trend arrow component */
+function TrendArrow({ current, previous }: { current: number; previous: number }) {
+  if (previous === 0 && current === 0) return null;
+  const diff = current - previous;
+  if (diff > 2) return <TrendingUpIcon sx={{ fontSize: 18, color: 'success.main', ml: 0.5 }} />;
+  if (diff < -2) return <TrendingDownIcon sx={{ fontSize: 18, color: 'error.main', ml: 0.5 }} />;
+  return <TrendingFlatIcon sx={{ fontSize: 18, color: 'text.secondary', ml: 0.5 }} />;
+}
+
+/** Stat card with animated counter */
+function StatCard({ label, value, suffix, color, subtitle, trend }: {
+  label: string;
+  value: number;
+  suffix?: string;
+  color: string;
+  subtitle: string;
+  trend?: { current: number; previous: number };
+}) {
+  const animated = useCountUp(value);
+  return (
+    <Card>
+      <CardContent sx={{ textAlign: 'center' }}>
+        <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 1.2 }}>{label}</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Typography variant="h3" color={color} sx={{ fontWeight: 700 }}>
+            {value > 0 ? `${animated}${suffix || ''}` : '—'}
+          </Typography>
+          {trend && <TrendArrow current={trend.current} previous={trend.previous} />}
+        </Box>
+        <Typography variant="body2" color="text.secondary">{subtitle}</Typography>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Dashboard() {
   const { queries } = useDatabase();
@@ -67,6 +107,12 @@ export default function Dashboard() {
     target: 85,
   }));
 
+  // Update PWA badge with uncompleted tactics for current week
+  const uncompleted = currentScore
+    ? currentScore.total_tactics - currentScore.completed_tactics
+    : 0;
+  updateAppBadge(uncompleted);
+
   const goalChartData = goalProgress.map((g) => ({
     name: g.goal_title.length > 20 ? g.goal_title.slice(0, 20) + '…' : g.goal_title,
     score: g.score,
@@ -96,52 +142,42 @@ export default function Dashboard() {
       {/* Quick Stats */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="overline" color="text.secondary">Current Week</Typography>
-              <Typography variant="h3" color="primary">
-                {currentWeek >= 1 && currentWeek <= 12 ? currentWeek : '—'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">of 12</Typography>
-            </CardContent>
-          </Card>
+          <StatCard
+            label="Current Week"
+            value={currentWeek >= 1 && currentWeek <= 12 ? currentWeek : 0}
+            color="primary"
+            subtitle="of 12"
+          />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="overline" color="text.secondary">This Week&apos;s Score</Typography>
-              <Typography
-                variant="h3"
-                color={currentScore ? `${getScoreColor(currentScore.score)}.main` : 'text.disabled'}
-              >
-                {currentScore && currentScore.total_tactics > 0 ? `${currentScore.score}%` : '—'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">execution rate</Typography>
-            </CardContent>
-          </Card>
+          <StatCard
+            label="This Week's Score"
+            value={currentScore && currentScore.total_tactics > 0 ? currentScore.score : 0}
+            suffix="%"
+            color={currentScore ? `${getScoreColor(currentScore.score)}.main` : 'text.disabled'}
+            subtitle="execution rate"
+            trend={currentWeek >= 2 ? {
+              current: currentScore?.score ?? 0,
+              previous: weekScores[currentWeek - 2]?.score ?? 0,
+            } : undefined}
+          />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="overline" color="text.secondary">Overall Score</Typography>
-              <Typography
-                variant="h3"
-                color={overallScore > 0 ? `${getScoreColor(overallScore)}.main` : 'text.disabled'}
-              >
-                {overallScore > 0 ? `${overallScore}%` : '—'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">cycle average</Typography>
-            </CardContent>
-          </Card>
+          <StatCard
+            label="Overall Score"
+            value={overallScore}
+            suffix="%"
+            color={overallScore > 0 ? `${getScoreColor(overallScore)}.main` : 'text.disabled'}
+            subtitle="cycle average"
+          />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="overline" color="text.secondary">Goals</Typography>
-              <Typography variant="h3" color="primary">{goalProgress.length}</Typography>
-              <Typography variant="body2" color="text.secondary">active goals</Typography>
-            </CardContent>
-          </Card>
+          <StatCard
+            label="Goals"
+            value={goalProgress.length}
+            color="primary"
+            subtitle="active goals"
+          />
         </Grid>
       </Grid>
 
@@ -242,7 +278,8 @@ export default function Dashboard() {
                         borderColor: w.week_number === currentWeek ? 'primary.main' : 'divider',
                         bgcolor: w.week_number === currentWeek ? 'primary.50' : 'transparent',
                         cursor: 'pointer',
-                        '&:hover': { bgcolor: 'action.hover' },
+                        transition: 'all 0.2s ease',
+                        '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' },
                       }}
                       onClick={() => navigate(`/scorecard?week=${w.week_number}`)}
                     >
