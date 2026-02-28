@@ -9,6 +9,8 @@ import {
   Chip,
   LinearProgress,
   Alert,
+  Checkbox,
+  CircularProgress,
 } from '@mui/material';
 import {
   LineChart,
@@ -28,10 +30,16 @@ import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import RateReviewIcon from '@mui/icons-material/RateReview';
+import TodayIcon from '@mui/icons-material/Today';
 import { useDatabase } from '../../db/hooks';
 import { getCurrentWeek, formatDate, getScoreColor, getScoreHex } from '../../lib/utils';
 import { useCountUp } from '../../lib/useCountUp';
 import { updateAppBadge } from '../../lib/badge';
+import { DAY_KEYS, DAY_LABELS, type DayKey } from '../../types';
+
+function getTodayKey(): DayKey {
+  return DAY_KEYS[new Date().getDay()];
+}
 
 /** Small trend arrow component */
 function TrendArrow({ current, previous }: { current: number; previous: number }) {
@@ -68,8 +76,99 @@ function StatCard({ label, value, suffix, color, subtitle, trend }: {
   );
 }
 
+/** Today's Tactics quick checklist */
+function TodayTactics({ cycleId, weekNumber, queries, refresh }: {
+  cycleId: number;
+  weekNumber: number;
+  queries: ReturnType<typeof useDatabase>['queries'];
+  refresh: () => void;
+}) {
+  const today = getTodayKey();
+  const scorecard = queries.getWeekScorecard(cycleId, weekNumber);
+
+  if (scorecard.length === 0) return null;
+
+  const doneTodayCount = scorecard.filter((t) => t[today] === 1).length;
+  const progress = Math.round((doneTodayCount / scorecard.length) * 100);
+
+  const handleToggle = async (tacticId: number, currentValue: number) => {
+    await queries.setDayCompletion(cycleId, weekNumber, tacticId, today, currentValue === 0);
+    refresh();
+  };
+
+  return (
+    <Card sx={{ mb: 3 }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TodayIcon color="primary" />
+            <Typography variant="h6">Today — {DAY_LABELS[today]}</Typography>
+          </Box>
+          <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+            <CircularProgress variant="determinate" value={progress} size={48} thickness={5} color={progress === 100 ? 'success' : 'primary'} />
+            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Typography variant="caption" fontWeight={700} color="text.secondary">
+                {doneTodayCount}/{scorecard.length}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+        {scorecard.map((t) => {
+          const checked = t[today] === 1;
+          return (
+            <Box
+              key={t.tactic_id}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                py: 0.75,
+                px: 1,
+                borderRadius: 1,
+                cursor: 'pointer',
+                transition: 'background-color 0.15s',
+                '&:hover': { bgcolor: 'action.hover' },
+              }}
+              onClick={() => handleToggle(t.tactic_id, t[today])}
+            >
+              <Checkbox
+                checked={checked}
+                size="small"
+                sx={{ p: 0.5, mr: 1 }}
+                tabIndex={-1}
+              />
+              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    textDecoration: checked ? 'line-through' : 'none',
+                    color: checked ? 'text.secondary' : 'text.primary',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {t.tactic_title}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {t.goal_title}
+                </Typography>
+              </Box>
+              <Chip
+                label={`${t.sun + t.mon + t.tue + t.wed + t.thu + t.fri + t.sat}/${t.weekly_target}`}
+                size="small"
+                variant="outlined"
+                sx={{ ml: 1, fontSize: '0.7rem' }}
+              />
+            </Box>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Dashboard() {
-  const { queries } = useDatabase();
+  const { queries, refresh } = useDatabase();
   const navigate = useNavigate();
 
   const cycle = queries.getActiveCycle();
@@ -200,6 +299,9 @@ export default function Dashboard() {
           </Button>
         </Box>
       )}
+
+      {/* Today's Tactics */}
+      {currentWeek >= 1 && currentWeek <= 12 && <TodayTactics cycleId={cycle.id} weekNumber={currentWeek} queries={queries} refresh={refresh} />}
 
       <Grid container spacing={3}>
         {/* Execution Trend Chart */}

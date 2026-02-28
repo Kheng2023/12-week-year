@@ -14,6 +14,7 @@ import {
   useMediaQuery,
   useTheme,
   Divider,
+  Tooltip,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -22,6 +23,9 @@ import ChecklistIcon from '@mui/icons-material/Checklist';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import HistoryIcon from '@mui/icons-material/History';
 import SettingsIcon from '@mui/icons-material/Settings';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import { useColorMode } from '../lib/ColorModeContext';
 
 const DRAWER_WIDTH = 260;
 
@@ -40,14 +44,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
+  const { mode, toggleColorMode } = useColorMode();
 
   const drawer = (
     <Box>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
         <FlagIcon color="primary" sx={{ fontSize: 28 }} />
-        <Typography variant="h6" noWrap sx={{ fontSize: '1.1rem' }}>
+        <Typography variant="h6" noWrap sx={{ fontSize: '1.1rem', flexGrow: 1 }}>
           12 Week Year
         </Typography>
+        <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
+          <IconButton onClick={toggleColorMode} size="small">
+            {mode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+          </IconButton>
+        </Tooltip>
       </Box>
       <Divider />
       <List sx={{ px: 1 }}>
