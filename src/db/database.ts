@@ -62,7 +62,10 @@ export async function initDatabase(): Promise<Database> {
   } else {
     db = new SQL.Database();
     db.exec(CREATE_TABLES_SQL);
-    await seedDemoData();
+    // Only seed demo data on the hosted GitHub Pages build
+    if (import.meta.env.VITE_DEMO === 'true') {
+      await seedDemoData();
+    }
     await saveDb();
   }
 
