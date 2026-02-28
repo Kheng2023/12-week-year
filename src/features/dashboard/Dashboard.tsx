@@ -15,15 +15,12 @@ import {
 import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-  Cell,
 } from 'recharts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
@@ -32,7 +29,7 @@ import ChecklistIcon from '@mui/icons-material/Checklist';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import TodayIcon from '@mui/icons-material/Today';
 import { useDatabase } from '../../db/hooks';
-import { getCurrentWeek, formatDate, getScoreColor, getScoreHex } from '../../lib/utils';
+import { getCurrentWeek, formatDate, getScoreColor } from '../../lib/utils';
 import { useCountUp } from '../../lib/useCountUp';
 import { updateAppBadge } from '../../lib/badge';
 import { DAY_KEYS, DAY_LABELS, type DayKey } from '../../types';
@@ -97,8 +94,8 @@ function TodayTactics({ cycleId, weekNumber, queries, refresh }: {
   };
 
   return (
-    <Card sx={{ mb: 3 }}>
-      <CardContent>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ flexGrow: 1, overflow: 'auto', maxHeight: 380 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <TodayIcon color="primary" />
@@ -212,11 +209,7 @@ export default function Dashboard() {
     : 0;
   updateAppBadge(uncompleted);
 
-  const goalChartData = goalProgress.map((g) => ({
-    name: g.goal_title.length > 20 ? g.goal_title.slice(0, 20) + '…' : g.goal_title,
-    score: g.score,
-    fullName: g.goal_title,
-  }));
+
 
   return (
     <Box>
@@ -300,9 +293,6 @@ export default function Dashboard() {
         </Box>
       )}
 
-      {/* Today's Tactics */}
-      {currentWeek >= 1 && currentWeek <= 12 && <TodayTactics cycleId={cycle.id} weekNumber={currentWeek} queries={queries} refresh={refresh} />}
-
       <Grid container spacing={3}>
         {/* Execution Trend Chart */}
         <Grid size={{ xs: 12, md: 8 }}>
@@ -330,38 +320,17 @@ export default function Dashboard() {
           </Card>
         </Grid>
 
-        {/* Goal Completion */}
+        {/* Today's Tactics */}
         <Grid size={{ xs: 12, md: 4 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Goal Completion</Typography>
-              {goalChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={goalChartData} layout="vertical" margin={{ left: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                    <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
-                    <Tooltip
-                      formatter={(value) => [`${value}%`, 'Completion']}
-                      labelFormatter={(_label, payload) => {
-                        const item = payload?.[0]?.payload as { fullName?: string } | undefined;
-                        return item?.fullName ?? String(_label);
-                      }}
-                    />
-                    <Bar dataKey="score" radius={[0, 4, 4, 0]}>
-                      {goalChartData.map((entry, index) => (
-                        <Cell key={index} fill={getScoreHex(entry.score)} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
-                  Add goals to see progress
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
+          {currentWeek >= 1 && currentWeek <= 12 ? (
+            <TodayTactics cycleId={cycle.id} weekNumber={currentWeek} queries={queries} refresh={refresh} />
+          ) : (
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                <Typography color="text.secondary">No active week</Typography>
+              </CardContent>
+            </Card>
+          )}
         </Grid>
 
         {/* Weekly Progress Bars */}
