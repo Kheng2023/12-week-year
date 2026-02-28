@@ -1,6 +1,7 @@
 import initSqlJs, { type Database } from 'sql.js';
 import { openDB } from 'idb';
 import { CREATE_TABLES_SQL } from './schema';
+import { seedDemoData } from './seed';
 
 const DB_NAME = '12-week-year';
 const DB_STORE = 'database';
@@ -61,6 +62,7 @@ export async function initDatabase(): Promise<Database> {
   } else {
     db = new SQL.Database();
     db.exec(CREATE_TABLES_SQL);
+    await seedDemoData();
     await saveDb();
   }
 
