@@ -1,0 +1,16 @@
+/* Global styles - MUI handles most theming */
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Fix for MUI toggle button group horizontal scroll */
+.MuiToggleButtonGroup-root {
+  flex-wrap: nowrap;
+}

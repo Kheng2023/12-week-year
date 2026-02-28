@@ -1,0 +1,68 @@
+export const SCHEMA_VERSION = 2;
+
+export const CREATE_TABLES_SQL = `
+CREATE TABLE IF NOT EXISTS schema_version (
+  version INTEGER NOT NULL
+);
+
+INSERT OR IGNORE INTO schema_version (version) VALUES (${SCHEMA_VERSION});
+
+CREATE TABLE IF NOT EXISTS cycles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  vision TEXT NOT NULL DEFAULT '',
+  is_active INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS goals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  cycle_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (cycle_id) REFERENCES cycles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS tactics (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  goal_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  weekly_target INTEGER NOT NULL DEFAULT 7,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (goal_id) REFERENCES goals(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS weekly_scores (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  cycle_id INTEGER NOT NULL,
+  week_number INTEGER NOT NULL CHECK(week_number BETWEEN 1 AND 12),
+  tactic_id INTEGER NOT NULL,
+  sun INTEGER NOT NULL DEFAULT 0,
+  mon INTEGER NOT NULL DEFAULT 0,
+  tue INTEGER NOT NULL DEFAULT 0,
+  wed INTEGER NOT NULL DEFAULT 0,
+  thu INTEGER NOT NULL DEFAULT 0,
+  fri INTEGER NOT NULL DEFAULT 0,
+  sat INTEGER NOT NULL DEFAULT 0,
+  FOREIGN KEY (cycle_id) REFERENCES cycles(id) ON DELETE CASCADE,
+  FOREIGN KEY (tactic_id) REFERENCES tactics(id) ON DELETE CASCADE,
+  UNIQUE(cycle_id, week_number, tactic_id)
+);
+
+CREATE TABLE IF NOT EXISTS weekly_reviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  cycle_id INTEGER NOT NULL,
+  week_number INTEGER NOT NULL CHECK(week_number BETWEEN 1 AND 12),
+  wins TEXT NOT NULL DEFAULT '',
+  improvements TEXT NOT NULL DEFAULT '',
+  insights TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (cycle_id) REFERENCES cycles(id) ON DELETE CASCADE,
+  UNIQUE(cycle_id, week_number)
+);
+`;
