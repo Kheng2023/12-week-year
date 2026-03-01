@@ -66,6 +66,18 @@ On Windows, the installer/exe is generated under:
 
 After installing, launch it directly from the desktop/start menu (no terminal).
 
+### Sharing with other users
+
+- Users who clone this repo can build their own installer by running `npm run tauri:build` (with Rust + C++ build tools installed).
+- The generated installer is machine-independent for the same OS/arch (for example, `x64` Windows), so you can share the built `.exe`/`.msi` with other users.
+- Recommended distribution: upload installers to **GitHub Releases** so users can download without building locally.
+
+### GitHub Pages compatibility
+
+- Tauri changes do **not** break GitHub Pages.
+- Web deploy still uses the normal Vite build (`npm run build`) with base path `/12-week-year/`.
+- Desktop packaging uses `desktop` mode (`npm run build:desktop`) with a relative base path.
+
 ## The 12 Week Year Method
 
 Instead of vague annual goals, the 12 Week Year method compresses your planning into 12-week cycles:
