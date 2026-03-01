@@ -45,6 +45,27 @@ npx serve dist
 
 Then open `http://localhost:3000/12-week-year/` in your browser.
 
+## Desktop App (Tauri)
+
+Run as a fully local desktop app (Windows/macOS/Linux):
+
+```bash
+# Install Rust once (required by Tauri)
+# https://www.rust-lang.org/tools/install
+
+# Start desktop app in development mode
+npm run tauri:dev
+
+# Build an installable desktop app
+npm run tauri:build
+```
+
+On Windows, the installer/exe is generated under:
+
+`src-tauri/target/release/bundle/`
+
+After installing, launch it directly from the desktop/start menu (no terminal).
+
 ## The 12 Week Year Method
 
 Instead of vague annual goals, the 12 Week Year method compresses your planning into 12-week cycles:
