@@ -71,6 +71,7 @@ After installing, launch it directly from the desktop/start menu (no terminal).
 - Users who clone this repo can build their own installer by running `npm run tauri:build` (with Rust + C++ build tools installed).
 - The generated installer is machine-independent for the same OS/arch (for example, `x64` Windows), so you can share the built `.exe`/`.msi` with other users.
 - Recommended distribution: upload installers to **GitHub Releases** so users can download without building locally.
+- This repo includes a GitHub Actions workflow that automatically builds and attaches Windows installers to a published GitHub Release.
 
 ### GitHub Pages compatibility
 
